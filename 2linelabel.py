@@ -6,7 +6,10 @@ xdimension = 970
 ydimension = 331
 img = Image.new('1', (xdimension,xdimension), 255) # 148?
 
-fontsize = 105
+fontsize = 100 # Three Lines
+# fontsize = 300 # One Line
+# fontsize = 150 # Two lines?
+
 fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
 # fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
 font = ImageFont.truetype(fontfile, fontsize)

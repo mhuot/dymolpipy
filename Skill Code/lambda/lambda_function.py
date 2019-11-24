@@ -83,13 +83,19 @@ class PrintIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         logger.info("In PrintHandler")
         labelContent = handler_input.request_envelope.request.intent.slots["labelContent"].value
-        url = "http://5cbab768.ngrok.io/print/" + labelContent
+        url = "http://196fed2b.ngrok.io/print/" + labelContent
         response = requests.get(url)
         if response.status_code == 200:
             speech = response.text
+        elif response.status_code == 502:
+            speech = "I received an errror from the backend."
+            logger.info(f"Tried sending to {url} and received {response.status_code} which usually indicates ngrok couldn't reach the backend.")
+        elif response.status_code == 404:
+            speech = "I received an error from the tunnel."
+            logger.info(f"Tried sending to {url} and received {response.status_code} which usually indicates ngrok is not running or has changed.")
         else:
-            speech = "I had trouble sending to the label maker"
-            logger.info(f"Tried sending to {url} and received {response.status_code}")
+            speech = "I had trouble sending to the label maker."
+            logger.info(f"Tried sending to {url} and received {response.status_code} this is a new error.")
         return (
             handler_input.response_builder
                 .speak(speech)
@@ -114,7 +120,7 @@ class ReprintIntentHandler(AbstractRequestHandler):
         # if the_number is None:
         #     the_number = str(randint(1,11))
         labelContent = handler_input.request_envelope.request.intent.slots["labelContent"].value
-        url = "http://1be715c6.ngrok.io/print/" + labelContent
+        url = "http://196fed2b.ngrok.io/print/" + labelContent
         response = requests.get(url)
         if response.status_code == 200:
             the_fact = response.text
