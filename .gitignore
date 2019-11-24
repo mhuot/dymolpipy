@@ -105,3 +105,4 @@ venv.bak/
 
 # output dir for png
 output/
+.DS_Store
