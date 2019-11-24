@@ -27,7 +27,7 @@ def index():
 
 @app.route('/print/<string:labelContent>', methods=['GET'])
 def printLabel(labelContent):
-    printit(labelContent)
+#    printit(labelContent)
     return f"Printing a label that says {labelContent}"
 
 @app.route('/reprint/<string:labelContent>/<int:number>', methods=['GET'])
