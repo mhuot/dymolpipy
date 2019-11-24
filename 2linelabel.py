@@ -1,6 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
-from textwrap3 import fill
 
 # xdimension = 1051
 xdimension = 970
