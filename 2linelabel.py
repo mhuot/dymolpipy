@@ -15,23 +15,26 @@ width = 0
 printable = ""
 # labelContent = fill("12345678901234567890123456789012345678901234567890", 17)
 # labelContent = "12345678901234567890123456789012345678901234567890"
-labelContent = "aBcdaedlkasjndfoinasdjnaskjdJDISNAKJSDKJNjnjasncadsjkansjidnijasniunJNJN"
+labelContent = "aBcdaedlkasjndfoiaBcdaedlkasjndfoinaBcdaedlkasjndfoinnasdjnaskjdJDISNAKJSDKJNjnjasncadsjkansjidnijasniunJNJN"
 line = 0
 lines = []
 for index in range(len(labelContent)) :
     currentchar = labelContent[index]
-    if font.getsize(printable + currentchar)[0] <= xdimension:
+    if font.getsize(printable + currentchar)[0] < xdimension:
         printable = printable + currentchar
     else:
-        printable = printable + currentchar
+        # printable = printable + currentchar
+        if line < 3:
+            lines.append(printable)
         line += 1
-        lines.append(printable)
         printable = ""
 
 print(line)
-lines.append(printable)
+# lines.append(printable)
 
-print("\n".join(lines))
+mytext = "\n".join(lines)
+print(mytext)
+
 
 d = ImageDraw.Draw(img)
 d.text((0,0), mytext, font=font)
