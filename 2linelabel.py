@@ -6,36 +6,60 @@ xdimension = 970
 ydimension = 331
 img = Image.new('1', (xdimension,xdimension), 255) # 148?
 
-fontsize = 100 # Three Lines
+# fontsize = 100 # Three Lines
 # fontsize = 300 # One Line
 # fontsize = 150 # Two lines?
+fontsizes = [ 100, 150, 300 ]
 
 fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
 # fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
-font = ImageFont.truetype(fontfile, fontsize)
 width = 0
 printable = ""
 # labelContent = fill("12345678901234567890123456789012345678901234567890", 17)
 # labelContent = "12345678901234567890123456789012345678901234567890"
-labelContent = "aBcdaedlkasjndfoiaBcdaedlkasjndfoinaBcdaedlkasjndfoinnasdjnaskjdJDISNAKJSDKJNjnjasncadsjkansjidnijasniunJNJN"
-line = 0
-lines = []
-for index in range(len(labelContent)) :
-    currentchar = labelContent[index]
-    if font.getsize(printable + currentchar)[0] < xdimension:
-        printable = printable + currentchar
-    else:
-        # printable = printable + currentchar
-        if line < 3:
-            lines.append(printable)
-        line += 1
-        printable = ""
+labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth"
+labelContent = "Test second"
+labelWords = labelContent.split()
 
-print(line)
+lines = []
+testing = ""
+maxlines = 3
+linenumber = 0
+
+for size in fontsizes:
+    lines = []
+    for word in labelWords:
+        print(f"Checking on word {word}")
+        font = ImageFont.truetype(fontfile, size)
+        if lines: # See if we have any lines yet, if we do then let's check the length plus our new word
+            currentline = lines[linenumber] + " " + word
+        else: # No lines yet so we only need to see if our word fits on the line
+            currentline = word
+        if font.getsize(currentline)[0] < xdimension:
+            print(f"Looking at line {linenumber}")
+            if lines:
+                if lines[linenumber]:
+                    print(f"Reseting {linenumber} of {lines[linenumber]} to {currentline}")
+                    lines[linenumber] = testing
+                else:
+                    lines.append(currentline)
+            else:
+                print(f"Appending {currentline}")
+                lines.append(currentline)
+        else:
+            if len(lines) <= 2:
+                print(f"Adding line {linenumber} with {testing}")
+                lines.append(testing)
+            linenumber += 1
+            if linenumber == maxlines:
+                break
+            testing = ""
+
+# print(lines)
 # lines.append(printable)
 
 mytext = "\n".join(lines)
-print(mytext)
+print(f"Here is our - \n\n{mytext}")
 
 
 d = ImageDraw.Draw(img)
