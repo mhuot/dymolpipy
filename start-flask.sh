@@ -1,0 +1,1 @@
+FLASK_APP=web-label.py FLASK_DEBUG=1 python -m flask run -p 3000
