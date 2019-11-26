@@ -9,58 +9,75 @@ img = Image.new('1', (xdimension,xdimension), 255) # 148?
 # fontsize = 100 # Three Lines
 # fontsize = 300 # One Line
 # fontsize = 150 # Two lines?
-fontsizes = [ 100, 150, 300 ]
+fontsizes = [ 300, 150, 100 ]
 
 fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
 # fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
 width = 0
 printable = ""
 # labelContent = fill("12345678901234567890123456789012345678901234567890", 17)
-# labelContent = "12345678901234567890123456789012345678901234567890"
-labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth"
-labelContent = "Test second"
+labelContent = "123456"
+# labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth eleventh"
+# labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth"
+# labelContent = "First second third"
+# labelContent = "Test second"
+# labelContent = "Test"
 labelWords = labelContent.split()
 
-lines = []
-testing = ""
-maxlines = 3
-linenumber = 0
-
 for size in fontsizes:
+    print(f"Checking size {size}")
+    font = ImageFont.truetype(fontfile, size)
     lines = []
+    fits = False
+    linenumber = 0
     for word in labelWords:
-        print(f"Checking on word {word}")
-        font = ImageFont.truetype(fontfile, size)
-        if lines: # See if we have any lines yet, if we do then let's check the length plus our new word
+        # print(f"Checking on word {word}")
+        if lines: 
+            # print(f"Let's test adding {word} to existing line {linenumber} that has '{lines[linenumber]}'")
             currentline = lines[linenumber] + " " + word
-        else: # No lines yet so we only need to see if our word fits on the line
+        else: 
+            # print(f"Cool! First word on this label will be {word}")
             currentline = word
-        if font.getsize(currentline)[0] < xdimension:
-            print(f"Looking at line {linenumber}")
+        currentdim = font.getsize(currentline)[0]
+        # print(f"After adding {word}, the current line dimension would be {currentdim} the max is {xdimension}")
+        if  currentdim < xdimension:
+            # print(f"We had room at line {linenumber} for {word}")
+            fits = True
             if lines:
-                if lines[linenumber]:
-                    print(f"Reseting {linenumber} of {lines[linenumber]} to {currentline}")
-                    lines[linenumber] = testing
-                else:
-                    lines.append(currentline)
+                # print(f"Cool, we already have lines!")
+                # print(f"Updating line {linenumber} from '{lines[linenumber]}' to '{currentline}'")
+                lines[linenumber] = currentline
             else:
-                print(f"Appending {currentline}")
+                # print(f"No lines yet, let's add {currentline}")
                 lines.append(currentline)
         else:
-            if len(lines) <= 2:
-                print(f"Adding line {linenumber} with {testing}")
-                lines.append(testing)
-            linenumber += 1
-            if linenumber == maxlines:
-                break
-            testing = ""
+            # print(f"Adding {word} to {currentline} exceeded the max.")
+            if size == 100 and linenumber < 2:
+                # print(f"Line {linenumber} - {lines[linenumber]}")
+                linenumber += 1
+                lines.append(word)
+                # print(f"Line {linenumber} - {lines[linenumber]}")
+                currentline = word
+                # print(f"Start line {linenumber} for size {size} current line is now '{currentline}'")
+                fits = True
+            elif size == 150 and linenumber < 1:
+                # print(f"Line {linenumber} - {lines[linenumber]}")
+                linenumber += 1
+                lines.append(word)
+                # print(f"Line {linenumber} - {lines[linenumber]}")
+                currentline = word
+                # print(f"Start line {linenumber} for size {size} current line is now '{currentline}'")
+                fits = True
+            else:
+                fits = False
+    if fits:
+        print(f"We have a perfect fit at {size}")
+        break
 
-# print(lines)
-# lines.append(printable)
-
-mytext = "\n".join(lines)
-print(f"Here is our - \n\n{mytext}")
-
+if len(lines) > 1:
+    mytext = "\n".join(lines)
+else:
+    mytext = lines[0]
 
 d = ImageDraw.Draw(img)
 d.text((0,0), mytext, font=font)
