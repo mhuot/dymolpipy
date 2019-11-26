@@ -2,6 +2,7 @@ from app import app
 from PIL import Image, ImageDraw, ImageFont
 import os
 import sys
+from platform import system
 
 def printit(mytext):
     xdimension = 970
@@ -13,12 +14,23 @@ def printit(mytext):
     # fontsize = 150 # Two lines?
     fontsizes = [ 300, 150, 100 ]
 
-    fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
-    # fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
+    if system() == 'Darwin':
+        fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
+    elif system() == 'Linux':
+        fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
+    elif system() == 'Windows':
+        fontfile = 'tahoma' # I have not tested this
+    else:
+        print(f"I don't have a font setting for {fontfile}")
+    try:
+        font = ImageFont.truetype(fontfile, fontsizes[0])
+    except:
+        print(f"Something went wrong, with setting the font")
+
     width = 0
     printable = ""
     # labelContent = fill("12345678901234567890123456789012345678901234567890", 17)
-    labelContent = "123456"
+    labelContent = mytext
     # labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth eleventh"
     # labelContent = "First second third fouth fifth Sixth Seventh eighth nineth tenth"
     # labelContent = "First second third"
