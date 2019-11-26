@@ -11,8 +11,9 @@ img = Image.new('1', (xdimension,xdimension), 255) # 148?
 # fontsize = 150 # Two lines?
 fontsizes = [ 300, 150, 100 ]
 
-fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
+# fontfile = '/System/Library/Fonts/Supplemental/Tahoma.ttf'
 # fontfile = '/usr/share/fonts/truetype/tahoma.ttf'
+fontfile = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 width = 0
 printable = ""
 # labelContent = fill("12345678901234567890123456789012345678901234567890", 17)
@@ -26,7 +27,8 @@ labelWords = labelContent.split()
 
 for size in fontsizes:
     print(f"Checking size {size}")
-    font = ImageFont.truetype(fontfile, size)
+    # font = ImageFont.truetype(fontfile, size)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", size)
     lines = []
     fits = False
     linenumber = 0
@@ -86,4 +88,4 @@ rotated = rotated.crop( (xdimension-ydimension, 0, xdimension, xdimension) )
 
 rotated.save('./output/rotated.png')
 img.save('./output/image.png', fillcolor="white")
-# os.system(f"lpr -o ppi=300 ./output/rotated.png")
+os.system(f"lpr -o ppi=300 ./output/rotated.png")
