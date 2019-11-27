@@ -39,7 +39,7 @@ def makeimage(labelContent):
     fontsizes = [ 300, 150, 100, 75 ]
 
     labelWords = labelContent.split()
-    fontfile = setfont(tahoma);
+    fontfile = setfont("tahoma");
 
     for size in fontsizes:
         font = ImageFont.truetype(fontfile, size)
