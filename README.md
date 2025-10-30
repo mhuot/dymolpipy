@@ -7,6 +7,7 @@ Note: The Alexa integration included here is likely obsolete due to changes in t
 ## What’s inside
 
 - Web service (Flask) that exposes simple HTTP endpoints to print labels via `lpr`.
+- JSON API for local automations (Apple Shortcuts), with token header and simple config.
 - Command-line scripts experimenting with 1–3 line labels and media testing.
 - Sample utilities to test CUPS media options.
 - Legacy Alexa Skill (Lambda) code that called the web service through an ngrok URL.
@@ -19,7 +20,7 @@ Note: The Alexa integration included here is likely obsolete due to changes in t
 - Pillow (installed via `requirements.txt`)
 - A monospaced font available on your system. The code references:
   - Linux: `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`
-  - macOS examples in some scripts: `/System/Library/Fonts/Supplemental/Tahoma.ttf`
+  - macOS: `/System/Library/Fonts/Supplemental/Tahoma.ttf`
   Adjust font paths as needed for your OS.
 
 Tip: Create an `output/` directory in the project root to view generated images that are sent to the printer.
@@ -70,12 +71,6 @@ Then in another shell or browser:
 curl "http://127.0.0.1:5000/print/Hello%20World"
 ```
 
-Notes/limitations for the web endpoint:
-
-- Font size is fixed large (300) and text is not wrapped; long strings may clip.
-- Image is constructed square and rotated then cropped to an approximately 1051×331 logical area (variables `length` and `width` in code). Adjust as needed for your media.
-- `lpr` is invoked without a specific `-P` printer name; your system default printer will be used unless you customize the command in `app/routes.py`.
-
 ## API (v1)
 
 A new JSON API is available for Apple Shortcuts and other local automations. POST endpoints require a token in the `X-Label-Token` header (or `?token=...`). The token is auto-generated on first run and stored in `.label_token`.
@@ -100,15 +95,25 @@ curl -X POST http://127.0.0.1:5000/api/print \
   -d '{"text":"Hello World","copies":1,"size":"large"}'
 ```
 
-Config file:
+### Rendering and wrapping
 
-- `config.json` is created on first run with defaults:
-  - `printer_name`: "DYMO LabelWriter 450"
-  - `dpi`: 300
-  - `media`: null (set to your CUPS media key if desired)
-  - `size_presets`: `{ large: 300, small: 200 }`
-  - `canvas`: `{ square: 1050, label_height: 338 }`
-  - `font_paths`: macOS Tahoma, Linux DejaVuSansMono (adjust as needed)
+- Uses word-based wrapping with a 2-line cap; very long words are split to fit.
+- If the text still exceeds the available space, the last line is truncated with an ellipsis.
+- Canvas is rotated and cropped to a ~1050×338 area suitable for DYMO 30252 at 300 DPI.
+
+### Media auto-detection
+
+If `config.json` has `media: null`, the API will attempt to detect the CUPS media token for DYMO 30252 by running `lpoptions -p "DYMO LabelWriter 450" -l` and searching for values containing `30252` (falling back to an `Address` value). On success, it persists the detected token back to `config.json`.
+
+To override, set `media` in `config.json` manually.
+
+## Apple Shortcuts (quick start)
+
+- Build a Shortcut that:
+  1) Dictates Text → `text`
+  2) Asks for Number → `copies` (default 1)
+  3) Presents Menu (Large/Small) → `size`
+  4) POSTs to `http://<host>:5000/api/print` with headers `Content-Type: application/json`, `X-Label-Token: <contents of .label_token>` and JSON `{text, copies, size}`.
 
 ## Command-line scripts
 

@@ -14,7 +14,7 @@ This document defines the next steps to create a hands‑free, voice‑triggered
 - Host OS: macOS or Raspberry Pi (Raspberry Pi OS/Debian) with CUPS installed and `lpr` available.
 - Printer name: "DYMO LabelWriter 450" (as shown in macOS/CUPS). If different, we will make this configurable.
 - DPI: 300. Label pixel target ≈ 1050 × 338 (3.5" x 1.125" at 300 DPI) which matches existing code’s ~1051×331.
-- Media option: the CUPS PPD for DYMO will expose a media/page size for 30252. The exact option name varies; we will detect and store it at setup time via `lpoptions -p "DYMO LabelWriter 450" -l`.
+- Media option: the CUPS PPD for DYMO will expose a media/page size for 30252. We now auto-detect this on first use (best-effort) and persist it to `config.json`.
 
 ## Host OS notes
 
@@ -31,7 +31,7 @@ This document defines the next steps to create a hands‑free, voice‑triggered
   - Start/enable CUPS service: `sudo systemctl enable --now cups`
   - Typical monospaced font path: `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`.
 
-To discover available media names for the DYMO:
+To discover available media names for the DYMO manually (optional):
 ```
 lpoptions -p "DYMO LabelWriter 450" -l | grep -i media
 ```
@@ -58,8 +58,8 @@ lpoptions -p "DYMO LabelWriter 450" -l | grep -i media
 ## Functional requirements
 
 - Input parameters: text (1–80 chars), copies (1–20, default 1), size preset (small|large, default large), optional media override.
-- Render: auto-wrap to max 2 lines; truncate with ellipsis if still too long.
-- Print: use `lpr` targeting the DYMO LabelWriter 450; pass DPI 300 and media when available.
+- Render: word-based auto-wrap to max 2 lines with ellipsis on overflow; split overly long words.
+- Print: use `lpr` targeting the DYMO LabelWriter 450; pass DPI 300 and media when available (auto-detected if missing).
 - History: store last job for reprint.
 - Observability: save last N rendered PNGs to `output/`; basic log lines.
 
@@ -74,7 +74,7 @@ lpoptions -p "DYMO LabelWriter 450" -l | grep -i media
 
 - Flask app (existing `app/`), extended with new JSON POST endpoints under `/api/*`.
 - Rendering via Pillow (existing), with parameterized dimensions and fonts.
-- Printing via `lpr`, default printer name set to "DYMO LabelWriter 450" (configurable).
+- Printing via `lpr`, default printer name set to "DYMO LabelWriter 450" (configurable). If `media` is not set, we attempt to discover the 30252 token via `lpoptions`.
 - Apple Shortcut invokes POST /api/print with JSON and a token header.
 
 ## API (v1)
@@ -86,7 +86,7 @@ Auth: All POST endpoints require `X-Label-Token: <token>` header (or `?token=...
     - text: string (required, <= 80)
     - copies: integer (optional, 1..20, default 1)
     - size: string enum (optional: "small" | "large", default "large")
-    - media: string (optional CUPS media name; if omitted, use configured default)
+    - media: string (optional CUPS media name; if omitted, use configured default or detected value)
   - Response 200:
     - { jobId: string, text: string, copies: number }
   - Response errors: 400 invalid input, 401 unauthorized, 409 printer unavailable, 500 internal
@@ -106,24 +106,19 @@ Compatibility (existing):
 
 ## Rendering details
 
-- Canvas: base square then rotate and crop to 1050×338 (configurable constants), aligning with DYMO 30252 label size at 300 DPI.
+- Canvas: base square then rotate and crop to ~1050×338, aligning with DYMO 30252 at 300 DPI.
 - Fonts:
   - large: 300px monospaced (default)
   - small: 200px monospaced
   - Font path configurable per-OS; default to DejaVuSansMono or macOS Tahoma if available.
-- Wrap: greedy wrap to max 2 lines by pixel width; append ellipsis if overflow.
+- Wrap: word-based to max 2 lines; very long words are split; ellipsis added if overflow.
 
 ## Printing details
 
 - Printer name: default `-P "DYMO LabelWriter 450"` (configurable env/ini).
 - DPI: `-o ppi=300`.
-- Media: detected/recorded media key for 30252 (e.g., `-o media=<value>`); exact token determined by `lpoptions` output.
+- Media: uses configured `media` from `config.json` or attempts detection via `lpoptions` (searching for tokens containing `30252`).
 - Copies: use `-# <n>` if supported; otherwise loop submits.
-
-To discover media name on macOS or Raspberry Pi (run locally):
-```
-lpoptions -p "DYMO LabelWriter 450" -l | grep -i media
-```
 
 ## Security
 
@@ -151,22 +146,20 @@ lpoptions -p "DYMO LabelWriter 450" -l | grep -i media
 
 ## Risks & mitigations
 
-- Media option mismatch → Detect and store during setup; allow override via env/config.
+- Media option mismatch → Auto-detect on first use; allow manual override.
 - Font availability → Provide clear macOS and Raspberry Pi default paths and fallbacks; allow config.
 - Printer offline → Return 409 with message; optionally retry once.
 
 ## Milestones
 
-- Phase 1: API + Apple Shortcuts (v1)
-  - Implement `/api/print` (POST), `/api/reprint` (POST), `/api/health`.
-  - Rendering presets (small/large), 2-line wrap, truncate with ellipsis.
-  - Token generation and validation, simple config file for printer/media.
-  - Example Apple Shortcut instructions in README; optional .shortcut file.
-  - Acceptance: Voice via Shortcut prints within 3 seconds; copies/size work; reprint last works.
+- Phase 1: API + Apple Shortcuts (v1) — Implemented
+  - `/api/print`, `/api/reprint`, `/api/health`, token auth
+  - Rendering presets and 2-line word-based wrapping with ellipsis
+  - Media auto-detection on first use; config persisted
+  - Example Shortcut guidance in README
 
 - Phase 2: Home Assistant (optional)
   - REST Command and Assist sentences to trigger prints locally.
-  - Acceptance: Voice via Assist reliably submits local jobs.
 
 - Phase 3: Enhancements (optional)
   - Barcode/QR support; media selection by voice; last N job history endpoint; simple UI; rate limiting.
