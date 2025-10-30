@@ -5,7 +5,7 @@ import os
 import sys
 from typing import Optional
 
-from app.config import load_or_create_token, load_config
+from app.config import load_or_create_token, load_config, ensure_media_configured
 from app.label_utils import render_label, print_label, load_last_job
 
 # --- Legacy demo print helper (kept for back-compat) ---
@@ -86,7 +86,7 @@ def api_print():
     img_path, meta = render_label(text.strip(), size_preset=size)
     try:
         cfg = load_config()
-        effective_media = media if media else cfg.get('media')
+        effective_media = media if media else (cfg.get('media') or ensure_media_configured())
         print_label(img_path, copies=copies, media=effective_media)
     except Exception as e:
         return jsonify({"error": "print failed", "detail": str(e)}), 409
@@ -118,7 +118,8 @@ def api_reprint():
 
     try:
         cfg = load_config()
-        print_label(last['image_path'], copies=copies, media=cfg.get('media'))
+        effective_media = cfg.get('media') or ensure_media_configured()
+        print_label(last['image_path'], copies=copies, media=effective_media)
     except Exception as e:
         return jsonify({"error": "print failed", "detail": str(e)}), 409
 

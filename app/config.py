@@ -2,7 +2,9 @@ import json
 import os
 import platform
 import secrets
-from typing import Any, Dict
+import subprocess
+import re
+from typing import Any, Dict, Optional
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 CONFIG_PATH = os.path.join(ROOT_DIR, "config.json")
@@ -74,3 +76,55 @@ def load_or_create_token() -> str:
     except Exception:
         pass
     return token
+
+
+def detect_media_for_30252(printer_name: Optional[str] = None) -> Optional[str]:
+    """Best-effort detection of CUPS media/page size value for DYMO 30252 labels.
+    Parses lpoptions -l output and searches for tokens containing 30252.
+    Returns the media token (string) or None if not found.
+    """
+    cfg = load_config()
+    printer = printer_name or cfg.get("printer_name")
+    if not printer:
+        return None
+    try:
+        proc = subprocess.run(
+            ["lpoptions", "-p", printer, "-l"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except Exception:
+        return None
+    out = proc.stdout or ""
+    candidates: list[str] = []
+    for line in out.splitlines():
+        if re.search(r"(?i)media|pagesize", line):
+            # Format: OptionName/Label: *val1 val2 val3
+            parts = line.split(":", 1)
+            if len(parts) != 2:
+                continue
+            values = parts[1].strip()
+            # values like: *LW_30252Address LW_30321 LW_99012
+            tokens = values.replace("*", "").split()
+            for t in tokens:
+                if re.search(r"30252", t, re.IGNORECASE):
+                    candidates.append(t)
+            # fallback: anything with 'Address'
+            for t in tokens:
+                if not candidates and re.search(r"address", t, re.IGNORECASE):
+                    candidates.append(t)
+    return candidates[0] if candidates else None
+
+
+def ensure_media_configured() -> Optional[str]:
+    cfg = load_config()
+    if cfg.get("media"):
+        return cfg["media"]
+    media = detect_media_for_30252(cfg.get("printer_name"))
+    if media:
+        cfg["media"] = media
+        save_config(cfg)
+        return media
+    return None
