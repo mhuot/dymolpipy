@@ -61,6 +61,19 @@ def _require_token() -> Optional[str]:
 def api_health():
     return jsonify({"status": "ok"})
 
+@app.route('/api/config', methods=['GET'])
+def api_config():
+    cfg = load_config()
+    # Do not include any secrets (token is stored separately anyway)
+    return jsonify({
+        "printer_name": cfg.get("printer_name"),
+        "dpi": cfg.get("dpi"),
+        "media": cfg.get("media"),
+        "size_presets": cfg.get("size_presets"),
+        "canvas": cfg.get("canvas"),
+        "font_paths": cfg.get("font_paths")
+    })
+
 @app.route('/api/print', methods=['POST'])
 def api_print():
     if _require_token() is None:
