@@ -12,6 +12,8 @@ Note: The Alexa integration included here is likely obsolete due to changes in t
 - Sample utilities to test CUPS media options.
 - Legacy Alexa Skill (Lambda) code that called the web service through an ngrok URL.
 
+See `docs/Shortcuts.md` for a step-by-step Apple Shortcuts setup. You can also browse runtime settings at `/api/config`.
+
 ## Requirements
 
 - macOS or Linux with CUPS installed (so `lpr` works)
@@ -86,6 +88,9 @@ A new JSON API is available for Apple Shortcuts and other local automations. POS
 - GET `/api/health`
   - Returns `{ "status": "ok" }`
 
+- GET `/api/config`
+  - Returns non-sensitive runtime config (printer name, dpi, media, presets, canvas, font paths)
+
 Example print request:
 
 ```
@@ -109,11 +114,7 @@ To override, set `media` in `config.json` manually.
 
 ## Apple Shortcuts (quick start)
 
-- Build a Shortcut that:
-  1) Dictates Text → `text`
-  2) Asks for Number → `copies` (default 1)
-  3) Presents Menu (Large/Small) → `size`
-  4) POSTs to `http://<host>:5000/api/print` with headers `Content-Type: application/json`, `X-Label-Token: <contents of .label_token>` and JSON `{text, copies, size}`.
+See `docs/Shortcuts.md` for step-by-step instructions to build the `Print Label` and `Reprint` Shortcuts using Dictation and `Get Contents of URL` with the token header.
 
 ## Command-line scripts
 
