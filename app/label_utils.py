@@ -12,33 +12,75 @@ LAST_JOB_PATH = os.path.join(OUTPUT_DIR, "last_job.json")
 
 
 def _measure_text(text: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
-    # Pillow 6.x supports getsize; newer has getbbox/getlength. Use getsize for compatibility.
     return font.getsize(text)
 
 
+def _wrap_word_fallback(word: str, font: ImageFont.FreeTypeFont, max_width: int) -> List[str]:
+    # Break a too-long word into chunks that fit max_width
+    parts: List[str] = []
+    buf = ""
+    for ch in word:
+        if _measure_text(buf + ch, font)[0] <= max_width:
+            buf += ch
+        else:
+            if buf:
+                parts.append(buf)
+            buf = ch
+    if buf:
+        parts.append(buf)
+    return parts
+
+
 def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int, max_lines: int = 2) -> List[str]:
-    # Greedy char-based wrap to avoid word-measure complexity on older Pillow
+    words = text.split()
+    if not words:
+        return [""]
     lines: List[str] = []
     current = ""
-    for ch in text:
-        w, _ = _measure_text(current + ch, font)
-        if w <= max_width:
-            current += ch
+    for w in words:
+        candidate = (current + " " + w).strip() if current else w
+        if _measure_text(candidate, font)[0] <= max_width:
+            current = candidate
         else:
-            lines.append(current)
-            current = ch
-            if len(lines) >= max_lines:
-                break
+            # word itself too long? break it
+            if _measure_text(w, font)[0] > max_width:
+                chunks = _wrap_word_fallback(w, font, max_width)
+                # place first chunk on current line if possible
+                first = chunks[0]
+                cand2 = (current + " " + first).strip() if current else first
+                if _measure_text(cand2, font)[0] <= max_width:
+                    current = cand2
+                    chunks = chunks[1:]
+                # commit current if full
+                if current:
+                    lines.append(current)
+                    current = ""
+                for chnk in chunks:
+                    if _measure_text(chnk, font)[0] <= max_width:
+                        lines.append(chnk)
+                    else:
+                        # extreme fallback: char split already ensures fit
+                        lines.append(chnk)
+                    if len(lines) >= max_lines:
+                        break
+                if len(lines) >= max_lines:
+                    break
+            else:
+                # commit current line and start new with word
+                if current:
+                    lines.append(current)
+                current = w
+                if len(lines) >= max_lines:
+                    break
     if len(lines) < max_lines and current:
         lines.append(current)
-    # Ellipsis if overflow
+    # Ellipsis if overflowed overall
     if len(lines) > max_lines:
         lines = lines[:max_lines]
-    # If original text didn't fit in allocated lines, ensure last line ends with ellipsis within width
-    joined = "".join(lines)
-    if len(joined) < len(text):
+    joined_len_by_chars = len(" ".join(words))
+    visible_len_by_chars = sum(len(s) for s in lines)
+    if visible_len_by_chars < joined_len_by_chars:
         last = lines[-1]
-        # trim and add ellipsis
         while last and _measure_text(last + "…", font)[0] > max_width:
             last = last[:-1]
         lines[-1] = (last + "…") if last else "…"
