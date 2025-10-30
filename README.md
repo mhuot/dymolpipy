@@ -76,6 +76,40 @@ Notes/limitations for the web endpoint:
 - Image is constructed square and rotated then cropped to an approximately 1051×331 logical area (variables `length` and `width` in code). Adjust as needed for your media.
 - `lpr` is invoked without a specific `-P` printer name; your system default printer will be used unless you customize the command in `app/routes.py`.
 
+## API (v1)
+
+A new JSON API is available for Apple Shortcuts and other local automations. POST endpoints require a token in the `X-Label-Token` header (or `?token=...`). The token is auto-generated on first run and stored in `.label_token`.
+
+- POST `/api/print`
+  - JSON body: `{ "text": "...", "copies": 1, "size": "large", "media": "<optional cups media>" }`
+  - Returns: `{ "jobId": "<timestamp>", "text": "...", "copies": 1 }`
+
+- POST `/api/reprint`
+  - JSON body: `{ "jobId": "<optional last job timestamp>", "copies": 1 }`
+  - Reprints the last job if `jobId` is omitted.
+
+- GET `/api/health`
+  - Returns `{ "status": "ok" }`
+
+Example print request:
+
+```
+curl -X POST http://127.0.0.1:5000/api/print \
+  -H "Content-Type: application/json" \
+  -H "X-Label-Token: $(cat .label_token)" \
+  -d '{"text":"Hello World","copies":1,"size":"large"}'
+```
+
+Config file:
+
+- `config.json` is created on first run with defaults:
+  - `printer_name`: "DYMO LabelWriter 450"
+  - `dpi`: 300
+  - `media`: null (set to your CUPS media key if desired)
+  - `size_presets`: `{ large: 300, small: 200 }`
+  - `canvas`: `{ square: 1050, label_height: 338 }`
+  - `font_paths`: macOS Tahoma, Linux DejaVuSansMono (adjust as needed)
+
 ## Command-line scripts
 
 These scripts were used to experiment with font sizing, wrapping, and media. They all generate images in `output/` and some invoke `lpr`.
